@@ -1,6 +1,6 @@
 FROM microsoft/dotnet:2.0-sdk AS build
 WORKDIR /app
-COPY backend /app
+COPY . /app
 RUN dotnet publish -f netcoreapp2.0 -c Release
 
 FROM microsoft/dotnet:2.0-runtime AS runtime
