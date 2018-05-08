@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Timers;
 using Dapper;
+using SteamKit2;
 using Timer = System.Timers.Timer;
 
 namespace SteamDatabaseBackend
@@ -21,6 +22,7 @@ namespace SteamDatabaseBackend
         private static RSS RssReader;
 
         public static Timer ChangelistTimer { get; private set; }
+        public static Timer UpdateTimer { get; private set; }
 
         public static Dictionary<uint, List<string>> ImportantApps { get; private set; }
         public static Dictionary<uint, byte> ImportantSubs { get; private set; }
@@ -42,6 +44,10 @@ namespace SteamDatabaseBackend
             ChangelistTimer = new Timer();
             ChangelistTimer.Elapsed += Tick;
             ChangelistTimer.Interval = TimeSpan.FromSeconds(1).TotalMilliseconds;
+
+            UpdateTimer = new Timer();
+            UpdateTimer.Elapsed += UpdateTick;
+            UpdateTimer.Interval = TimeSpan.FromMinutes(10).TotalMilliseconds;
 
             var thread = new Thread(Steam.Instance.Tick)
             {
@@ -90,6 +96,10 @@ namespace SteamDatabaseBackend
         {
             Steam.Instance.Apps.PICSGetChangesSince(Steam.Instance.PICSChanges.PreviousChangeNumber, true, true);
         }
+        private static void UpdateTick(object sender, ElapsedEventArgs e)
+        {
+            LoadUpdateList();
+        }
 
         public static void ReloadImportant(CommandArguments command)
         {
@@ -126,6 +136,16 @@ namespace SteamDatabaseBackend
             }
 
             Log.WriteInfo("Application", "Loaded {0} important apps and {1} packages", ImportantApps.Count, ImportantSubs.Count);
+        }
+
+        public static void LoadUpdateList()
+        {
+            using (var db = Database.Get())
+            {
+                var list = db.Query<UpdateItem>("SELECT `AppID` as `ID` FROM `UpdateList`").ToDictionary(x => x.ID, x => (byte) 1);
+                JobManager.AddJob(() => Steam.Instance.Apps.PICSGetAccessTokens(list.Keys, Enumerable.Empty<uint>()));
+                JobManager.AddJob(() => Steam.Instance.Apps.PICSGetProductInfo(Enumerable.Empty<SteamApps.PICSRequest>(), list.Keys.Select(package => Utils.NewPICSRequest(package))));
+            }
         }
 
         public static void Cleanup()

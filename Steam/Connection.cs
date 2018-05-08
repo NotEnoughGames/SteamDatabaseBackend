@@ -165,6 +165,8 @@ namespace SteamDatabaseBackend
             else
             {
                 JobManager.RestartJobsIfAny();
+                Application.LoadUpdateList();
+                Application.UpdateTimer.Start();
 
                 Application.ChangelistTimer.Start();
             }
