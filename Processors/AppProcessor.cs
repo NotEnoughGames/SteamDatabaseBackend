@@ -203,12 +203,6 @@ namespace SteamDatabaseBackend
                 }
             }
 
-            try
-            {
-                await DbConnection.ExecuteAsync("DELETE FROM `UpdateList` WHERE `AppID` = @AppID", new { AppID });
-            }
-            catch {}
-
             // Close the connection as it's no longer needed going into depot processor
             DbConnection.Close();
 

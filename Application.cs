@@ -143,6 +143,7 @@ namespace SteamDatabaseBackend
             using (var db = Database.Get())
             {
                 var list = db.Query<UpdateItem>("SELECT `AppID` as `ID` FROM `UpdateList`").ToDictionary(x => x.ID, x => (byte) 1);
+                db.Execute("DELETE FROM `UpdateList`");
                 JobManager.AddJob(() => Steam.Instance.Apps.PICSGetAccessTokens(list.Keys, Enumerable.Empty<uint>()));
                 JobManager.AddJob(() => Steam.Instance.Apps.PICSGetProductInfo(Enumerable.Empty<SteamApps.PICSRequest>(), list.Keys.Select(package => Utils.NewPICSRequest(package))));
             }
